@@ -60,18 +60,18 @@ provider "aws" {
 }
 
 #-------------------S3 BUCKET--------------------------
-resource "aws_s3_bucket" "Animal_Bucket" {
-  bucket = "flappy-bucket-${var.AWS_REGION}-${var.AVAILABILITY_ZONE}"
+resource "aws_s3_bucket" "animal_bucket" {
+  bucket = "animal-bucket-${var.AWS_REGION}-${var.AVAILABILITY_ZONE}"
 
 tags = {
-  Name        = "Flappy Bucket"
+  Name        = "animal bucket"
   Environment = "Server"
 }
 }
 
 #--------------------S3 BUCKET WEBSITE CONFIG--------------------------
 resource "aws_s3_bucket_website_configuration" "Animal_Site" {
-  bucket = aws_s3_bucket.Animal_Bucket.id   
+  bucket = aws_s3_bucket.animal_bucket.id   
 
   index_document {
     suffix = "index.html"

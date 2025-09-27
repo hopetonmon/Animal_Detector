@@ -1,0 +1,20 @@
+1. Launch s3 bucket
+2. Go to permissions and allow public access
+3. Update Policy to {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "PublicReadGetObject",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::animal-bucket-us-east-2-us-east-2a/*"
+        }
+    ]
+}
+TIP:update to s3 bucket name
+
+4. Upload index.html to root
+5. Upload ML model as a folder
+6. Launch using website endpoint in permissions
+7. Use Animal Detector!

@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Animal Detector</title>
   <style>
     body {
@@ -14,59 +14,128 @@
     #uploaded-image {
       max-width: 300px;
       margin-top: 1rem;
+      display: none;
     }
     #prediction {
       margin-top: 1rem;
       font-size: 1.2rem;
       font-weight: bold;
     }
+    #detectBtn {
+      margin-top: 1rem;
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      font-weight: bold;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #detectBtn:disabled {
+      background-color: #9e9e9e;
+      cursor: not-allowed;
+    }
+    #loading {
+      display: none;
+      margin-top: 1rem;
+    }
+    .spinner {
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #4CAF50;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
   <h1>Animal Detector</h1>
-  <p>Upload an animal photo to see the prediction:</p>
-  <input type="file" id="imageUpload" accept="image/*">
-  <br>
-  <img id="uploaded-image" src="" alt="">
+  <p>Upload an animal photo, then click <strong>Detect</strong> to see predictions:</p>
+
+  <input type="file" id="imageUpload" accept="image/*"><br>
+  <img id="uploaded-image" src="" alt="Uploaded preview"><br>
+
+  <button id="detectBtn" disabled>Detect</button>
+
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>Detecting...</p>
+  </div>
+
   <div id="prediction"></div>
 
-  <!-- Teachable Machine Library -->
+  <!-- Load TensorFlow.js first -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.4.0/dist/tf.min.js"></script>
+  <!-- Teachable Machine Image Library -->
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
 
   <script>
-    const URL = './Animal_Detector/'; // folder where model.json is
-    let model, maxPredictions;
+    const MODEL_URL = './Animal_Detector/'; // folder containing model.json, metadata.json, weights.bin
+    let model, maxPredictions, uploadedFile;
 
-    // Load the model
+    // Load the Teachable Machine model
     async function init() {
-      const modelURL = URL + "model.json";
-      const metadataURL = URL + "metadata.json";
+      const modelURL = MODEL_URL + "model.json";
+      const metadataURL = MODEL_URL + "metadata.json";
 
-      model = await tmImage.load(modelURL, metadataURL);
-      maxPredictions = model.getTotalClasses();
+      try {
+        model = await tmImage.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+        console.log("Model loaded successfully.");
+      } catch (err) {
+        console.error("Error loading model:", err);
+      }
     }
 
     // Run prediction on uploaded image
-    async function predictImage(file) {
+    async function runPrediction() {
+      if (!uploadedFile) return;
+
       const img = document.getElementById('uploaded-image');
-      img.src = URL.createObjectURL(file);
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('prediction').innerHTML = '';
+
       img.onload = async () => {
-        const prediction = await model.predict(img);
-        let resultText = '';
-        prediction.forEach(pred => {
-          resultText += `${pred.className}: ${(pred.probability * 100).toFixed(2)}%<br>`;
-        });
-        document.getElementById('prediction').innerHTML = resultText;
+        try {
+          const prediction = await model.predict(img);
+          let resultText = '';
+          prediction.forEach(pred => {
+            resultText += `${pred.className}: ${(pred.probability * 100).toFixed(2)}%<br>`;
+          });
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('prediction').innerHTML = resultText;
+        } catch (err) {
+          console.error("Prediction error:", err);
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('prediction').innerHTML = "Prediction failed.";
+        }
       };
+
+      img.src = URL.createObjectURL(uploadedFile);
     }
 
-    // Event listener for file upload
+    // File upload handler
     document.getElementById('imageUpload').addEventListener('change', (e) => {
       if (e.target.files.length > 0) {
-        predictImage(e.target.files[0]);
+        uploadedFile = e.target.files[0];
+        const img = document.getElementById('uploaded-image');
+        img.src = URL.createObjectURL(uploadedFile);
+        img.style.display = 'block';
+        document.getElementById('detectBtn').disabled = false;
       }
     });
 
+    // Detect button handler
+    document.getElementById('detectBtn').addEventListener('click', runPrediction);
+
+    // Initialize the model
     init();
   </script>
 </body>

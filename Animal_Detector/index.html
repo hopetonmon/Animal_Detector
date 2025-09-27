@@ -1,96 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Animal Detector</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       text-align: center;
-      padding: 40px;
-      background: #f5f5f5;
+      padding: 2rem;
+      background-color: #f4f4f4;
     }
-    h1 {
-      color: #333;
-    }
-    #upload-box {
-      margin: 20px auto;
-      padding: 20px;
-      border: 2px dashed #aaa;
-      width: 300px;
-      background: white;
-    }
-    #image-preview {
+    #uploaded-image {
       max-width: 300px;
-      margin-top: 20px;
-      border: 1px solid #ddd;
-      display: none;
+      margin-top: 1rem;
     }
-    #results {
-      margin-top: 20px;
-      font-size: 1.1em;
-      color: #222;
-    }
-    .prediction {
-      margin-top: 5px;
+    #prediction {
+      margin-top: 1rem;
+      font-size: 1.2rem;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-
   <h1>Animal Detector</h1>
-  <p>Upload an image to see the predicted animal class.</p>
+  <p>Upload an animal photo to see the prediction:</p>
+  <input type="file" id="imageUpload" accept="image/*">
+  <br>
+  <img id="uploaded-image" src="" alt="">
+  <div id="prediction"></div>
 
-  <div id="upload-box">
-    <input type="file" id="file-input" accept="image/*"/>
-    <img id="image-preview" />
-  </div>
-
-  <div id="results"></div>
-
-  <!-- TensorFlow.js and Teachable Machine Image Library -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
+  <!-- Teachable Machine Library -->
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
 
   <script>
-    const modelURL = "./model.json";
-    const metadataURL = "./metadata.json";
+    const URL = './Animal_Detector/'; // folder where model.json is
+    let model, maxPredictions;
 
-    let model;
-
+    // Load the model
     async function init() {
+      const modelURL = URL + "model.json";
+      const metadataURL = URL + "metadata.json";
+
       model = await tmImage.load(modelURL, metadataURL);
-      console.log("Model loaded.");
+      maxPredictions = model.getTotalClasses();
     }
 
-    const fileInput = document.getElementById("file-input");
-    const preview = document.getElementById("image-preview");
-    const results = document.getElementById("results");
-
-    fileInput.addEventListener("change", async (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        preview.src = e.target.result;
-        preview.style.display = "block";
-
-        const prediction = await model.predict(preview);
-        displayResults(prediction);
+    // Run prediction on uploaded image
+    async function predictImage(file) {
+      const img = document.getElementById('uploaded-image');
+      img.src = URL.createObjectURL(file);
+      img.onload = async () => {
+        const prediction = await model.predict(img);
+        let resultText = '';
+        prediction.forEach(pred => {
+          resultText += `${pred.className}: ${(pred.probability * 100).toFixed(2)}%<br>`;
+        });
+        document.getElementById('prediction').innerHTML = resultText;
       };
-      reader.readAsDataURL(file);
-    });
-
-    function displayResults(prediction) {
-      results.innerHTML = "<h3>Predictions:</h3>";
-      prediction.sort((a,b) => b.probability - a.probability);
-      prediction.forEach(p => {
-        const percent = (p.probability * 100).toFixed(2);
-        results.innerHTML += `<div class="prediction">${p.className}: ${percent}%</div>`;
-      });
     }
+
+    // Event listener for file upload
+    document.getElementById('imageUpload').addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        predictImage(e.target.files[0]);
+      }
+    });
 
     init();
   </script>
